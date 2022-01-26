@@ -25,10 +25,14 @@ public class UserService {
 	}
 
 	public User getById(Long id) {
-		if (userRepository.existsById(id)) {
-			return userRepository.findById(id).get();
-		}
-		throw new EntityNotFoundException("User with id " + id + " does not exist");
+		return userRepository.findById(id).orElseThrow(() -> {
+			return new EntityNotFoundException("User with id " + id + " does not exist");
+		});
+
+//		if (userRepository.existsById(id)) {
+//			return userRepository.findById(id).get();
+//		}
+//		throw new EntityNotFoundException("User with id " + id + " does not exist");
 	}
 
 	public User create(User user) {
