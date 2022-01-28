@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,18 +29,19 @@ import com.qa.userapp.service.UserService;
 @WebMvcTest(UserController.class)
 public class UserControllerWebIntegrationTest {
 
-	@Autowired
+	@Autowired // field injection
 	private UserController controller;
 
 	// we need a fake UserService
 	// - we can use Mockito to create a mock object
-	@MockBean
+	@MockBean // we are using our defined UserService, but the methods
+				// will be mocked (we have to specify what is returned from them)
 	private UserService userService;
 
 	// we need some data for our tests
-	private List<User> users;
-	private User userToCreate;
-	private User validUser;
+	private List<User> users; // list of users with ids
+	private User userToCreate; // without id
+	private User validUser; // with id
 
 	@BeforeEach // junit5 (jupiter) annotation to run this method before every test
 	public void init() {
@@ -61,11 +63,11 @@ public class UserControllerWebIntegrationTest {
 
 		// then (assert this happened)
 		ResponseEntity<List<User>> actual = controller.getUsers();
-		assertThat(expected).isEqualTo(actual);
+		assertThat(expected).isEqualTo(actual); // static assertThat method from assertJ
 
 		// we also need to verify that the service was called by the controller
-		verify(userService, times(1)).getAll();
-		// verify(userService).getAll();
+		verify(userService, times(1)).getAll(); // verify and times are from mockito
+		// verify(userService).getAll(); // equivalent to the above line
 	}
 
 	@Test
@@ -79,46 +81,49 @@ public class UserControllerWebIntegrationTest {
 
 		// then
 		ResponseEntity<User> actual = controller.createUser(userToCreate);
-		assertEquals(expected, actual);
+		assertEquals(expected, actual); // junit assertion
 
 		verify(userService).create(userToCreate);
 	}
 
 	@Test
 	public void getUserByIdTest() {
-		ResponseEntity<User> expected = new ResponseEntity<User>(validUser, HttpStatus.OK);
+		ResponseEntity<User> expected = ResponseEntity.of(Optional.of(validUser));
 
 		when(userService.getById(validUser.getId())).thenReturn(validUser);
 
-		ResponseEntity<User> actual = controller.getUserById(validUser.getId());
+		ResponseEntity<User> actual = controller.getUserById(1);
+
 		assertEquals(expected, actual);
 
-		verify(userService).getById(validUser.getId());
+		verify(userService, times(1)).getById(validUser.getId());
 	}
 
 	@Test
 	public void updateUserTest() {
-		ResponseEntity<User> expected = new ResponseEntity<User>(validUser, HttpStatus.ACCEPTED);
+		User updatedUser = new User(1, "bob", "lee-swagger", 22);
+		User toUpdateWith = new User("bob", "lee-swagger", 22);
+		long userId = updatedUser.getId();
 
-		when(userService.update(validUser.getId(), validUser)).thenReturn(validUser);
+//		HttpHeaders headers = new HttpHeaders();
+//		headers.add("Location", "/user/" + String.valueOf(userId));
+		ResponseEntity<User> expected = new ResponseEntity<User>(updatedUser, HttpStatus.ACCEPTED);
 
-		ResponseEntity<User> actual = controller.updateUser(validUser.getId(), validUser);
+		when(userService.update(userId, toUpdateWith)).thenReturn(updatedUser);
+
+		ResponseEntity<User> actual = controller.updateUser(userId, toUpdateWith);
+
 		assertEquals(expected, actual);
-
-		verify(userService).update(validUser.getId(), validUser);
+		verify(userService).update(userId, toUpdateWith);
 	}
 
 	@Test
 	public void deleteUserTest() {
-		// TODO: Implement me
-		ResponseEntity<User> expected = new ResponseEntity<User>(validUser, HttpStatus.ACCEPTED);
+		long userId = 1;
+		ResponseEntity<?> expected = ResponseEntity.accepted().build();
+		ResponseEntity<?> actual = controller.deleteUser(userId);
 
-		when(userService.delete(validUser.getId())).thenReturn(validUser);
-
-		ResponseEntity<?> actual = controller.deleteUser(validUser.getId());
 		assertEquals(expected, actual);
-
-		verify(userService).delete(validUser.getId());
-
+		verify(userService).delete(userId);
 	}
 }
